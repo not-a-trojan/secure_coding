@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <fmt/core.h>
 #include <fmt/format.h>
+#include <functional>
 
 // ##################################################
 // ##################################################
@@ -118,13 +119,27 @@ bool is_friendly(std::string_view x) { return x.find("sucks") == std::string_vie
 size_t truncate_to_max_text_length(size_t x) { return std::min(x, static_cast<size_t>(50)); };
 
 static const char* wifi_password = RED "nobody_will_ever_guess_this_pw" COLOR_RESET;
-bool is_in_shared_memory(const void* ptr) { return ptr != wifi_password; }
+
+bool is_in_shared_memory(const void* ptr, size_t /*length*/)
+{
+    // At this point we would NORMALLY check whether the entire range (pointer, pointer+length) fits into shared memory.
+    // This is to avoid that an attacker places pointer close to the end of shared memory and then uses a large range value
+    // to reach into private memory.
+    // Caution: Address range checks may seem trivial, but it is vital to account for possible integer overflow,
+    // partial range overlaps, one range being a subrange of the other, etc.
+
+    // For this example, since we don't have separate memory regions, we just compare the pointer with the address of the
+    // wifi password. Note that this would be totally insecure in practice:
+    //   If the attacker uses ptr=wifi_password-1 the check would pass and leak all data.
+    return ptr != wifi_password;
+}
 
 static std::function<void(void)> timed_exploit;
+
 void update_statistics(api::Status status)
 {
     fmt::print("  Decision: {}\n", status);
-    // this is the point in time where the attacker would strike
+    // Emulating the point in time where the attacker would strike
     if (timed_exploit)
     {
         timed_exploit();
@@ -148,7 +163,7 @@ void try_to_exploit(auto& receiver)
 #define GOOD_MESSAGE (GREEN "C++ rocks!" COLOR_RESET)
 #define BAD_MESSAGE (RED "C++ sucks!" COLOR_RESET)
     timed_exploit = {};
-    fmt::print("Sending good message:\n");
+    fmt::print("Test: Sending good message\n");
     {
         Status status = Status::waiting;
         Cmd command{GOOD_MESSAGE, &status};
@@ -156,7 +171,7 @@ void try_to_exploit(auto& receiver)
         receiver();
     }
     fmt::print("\n");
-    fmt::print("Sending unfriendly message:\n");
+    fmt::print("Test: Sending unfriendly message\n");
     {
         Status status = Status::waiting;
         Cmd command{BAD_MESSAGE, &status};
@@ -174,8 +189,8 @@ void try_to_exploit(auto& receiver)
     }
     fmt::print("\n");
 
-    // When running this exploit we may try to access a std::nullopt
-    // This crashes in a debug build, but (on my machine) works fine in release mode.
+    // When running this exploit we may try to access a std::nullopt.
+    // (On my machine) this crashes in a debug build, but works fine in release mode.
 #ifndef DEBUG
     fmt::print("Exploit: Status override\n");
     {
@@ -267,9 +282,9 @@ void friendly_billboard_attempt_3()
     auto receiver = [&process_message_command]() {
         auto received = shared_memory::deserialize<untrusted::ShowMessageCommand>();
 
-        auto message = received.message.verify(is_in_shared_memory);
         auto length  = received.length.sanitize(truncate_to_max_text_length);
-        auto status  = received.status.verify(is_in_shared_memory);
+        auto message = received.message.verify([length](auto message) { return is_in_shared_memory(message, length); });
+        auto status  = received.status.verify([](auto status) { return is_in_shared_memory(status, sizeof(*status)); });
 
         if (message.has_value() && status.has_value())
         {
@@ -279,6 +294,7 @@ void friendly_billboard_attempt_3()
         else if (status.has_value())
         {
             *status.value() = Status::rejected;
+            fmt::print("  Decision: rejected (invalid input detected)\n");
         }
     };
 
@@ -304,9 +320,9 @@ void friendly_billboard_attempt_4()
     auto receiver = [&process_message_command]() {
         auto received = shared_memory::deserialize<untrusted::ShowMessageCommand>();
 
-        auto message = received.message.verify(is_in_shared_memory);
         auto length  = received.length.sanitize(truncate_to_max_text_length);
-        auto status  = received.status.verify(is_in_shared_memory);
+        auto message = received.message.verify([length](auto message) { return is_in_shared_memory(message, length); });
+        auto status  = received.status.verify([](auto status) { return is_in_shared_memory(status, sizeof(*status)); });
 
         if (message.has_value() && status.has_value())
         {
@@ -317,6 +333,7 @@ void friendly_billboard_attempt_4()
         else if (status.has_value())
         {
             *status.value() = Status::rejected;
+            fmt::print("  Decision: rejected (invalid input detected)\n");
         }
     };
 
@@ -342,9 +359,9 @@ void friendly_billboard_attempt_5()
     auto receiver = [&process_message_command]() {
         auto received = shared_memory::deserialize<untrusted::ShowMessageCommand>();
 
-        auto message = received.message.verify(is_in_shared_memory);
         auto length  = received.length.sanitize(truncate_to_max_text_length);
-        auto status  = received.status.verify(is_in_shared_memory);
+        auto message = received.message.verify([length](auto message) { return is_in_shared_memory(message, length); });
+        auto status  = received.status.verify([](auto status) { return is_in_shared_memory(status, sizeof(*status)); });
 
         if (message.has_value() && status.has_value())
         {
@@ -355,6 +372,7 @@ void friendly_billboard_attempt_5()
         else if (status.has_value())
         {
             *status.value() = Status::rejected;
+            fmt::print("  Decision: rejected (invalid input detected)\n");
         }
     };
 

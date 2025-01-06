@@ -6,6 +6,7 @@
 
 #include "cppcon_example.hpp"
 
+#include <array>
 #include <cmath>
 #include <fmt/core.h>
 #include <fmt/format.h>
@@ -111,6 +112,7 @@ void demo_write_only()
     WriteOnly<int> w(&x);
     fmt::print("x = {}\n", x);
     w = 18;
+    // fmt::print("w = {}\n", w);  --> Doesn't compile as intended
     fmt::print("x = {}\n", x);
 }
 

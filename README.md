@@ -1,8 +1,9 @@
-This repository contains the library of secure coding helpers and demo code from my presentation "Security Beyond Memory Safety - Using Modern C++ to Avoid Vulnerabilities by Design" at CppCon 2024.
-[Link to recording coming soon]
+This repository contains the library of secure coding helpers and demo code from my presentation "[Security Beyond Memory Safety - Using Modern C++ to Avoid Vulnerabilities by Design](https://youtu.be/mv0SQ8dX7Cc)" at CppCon 2024.
 
-* [demo.cpp](demo/demo.cpp) highlights how the individual helpers of the library can be used
+![image](image.jpg)
+
 * [cppcon_example.cpp](demo/cppcon_example.cpp) showcases the "Friendly Billboard" example from the CppCon talk
+* [demo.cpp](demo/demo.cpp) highlights how the individual helpers of the library can be used
 
 **NOTE:** At its current state, the library is just for demonstration purposes.
 It is not production ready.
