@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 #include <fmt/format.h>
 #include <functional>
+#include <string_view>
 
 // ##################################################
 // ##################################################

@@ -8,5 +8,5 @@ struct WriteOnly
     void operator=(const T& t) { *m_pointer = t; }
 
 private:
-    T* m_pointer;
+    volatile T* m_pointer;
 };
